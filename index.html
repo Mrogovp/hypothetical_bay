@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hypothetical Bay</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header id="toolbar">
+    <button id="inspectBtn" title="Tap shows coords without dropping a mark">Inspect</button>
+    <button id="undoBtn"    title="Remove last mark (Ctrl+Z)">Undo</button>
+    <button id="clearBtn"   title="Remove all marks">Clear</button>
+    <button id="fitBtn"     title="Fit chart to screen">Fit</button>
+    <span class="spacer"></span>
+    <span id="status">Loading map.pdf…</span>
+  </header>
+
+  <main id="viewport">
+    <div id="world">
+      <img id="chartImg" src="map.png" alt="" draggable="false">
+      <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div id="hud">
+      <div id="cursorCoord">—</div>
+      <div id="hint">Click to drop a coordinate mark. Drag to pan, scroll to zoom.</div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

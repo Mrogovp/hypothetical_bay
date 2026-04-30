@@ -1,0 +1,143 @@
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
+body {
+  display: flex; flex-direction: column;
+  background: #0a0f17; color: #e7ecf2;
+  user-select: none;
+}
+
+#toolbar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 12px;
+  background: #0f1620;
+  border-bottom: 1px solid #2a3548;
+  font-size: 13px;
+}
+#toolbar button {
+  background: #1f2a3b; color: #e7ecf2;
+  border: 1px solid #2a3548;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  min-height: 44px;
+  min-width: 56px;
+  touch-action: manipulation;
+}
+#toolbar button:hover  { background: #2a3548; }
+#toolbar button:active { background: #182230; }
+#toolbar button.toggle-on {
+  background: #3b6ea5;
+  border-color: #4a82bf;
+  color: #fff;
+}
+#toolbar .spacer { flex: 1; }
+#toolbar #status { opacity: 0.7; font-style: italic; }
+
+#viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0a0f17;
+  cursor: crosshair;
+  overscroll-behavior: contain;
+}
+/* touch-action does NOT inherit; apply to every descendant the touch can
+   land on so the browser doesn't hijack the gesture for native pan/zoom. */
+#viewport, #world, #chartImg, #overlay {
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+#viewport.panning { cursor: grabbing; }
+
+#world {
+  position: absolute;
+  top: 0; left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+#chartImg {
+  display: block;
+  background: #fff;
+  box-shadow: 0 0 0 1px #2a3548;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+#overlay {
+  position: absolute;
+  top: 0; left: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+#hud {
+  position: absolute;
+  bottom: 12px; left: 12px;
+  right: 12px;
+  background: rgba(15, 22, 32, 0.88);
+  border: 1px solid #2a3548;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12px;
+  pointer-events: none;
+  max-width: max-content;
+  font-variant-numeric: tabular-nums;
+  backdrop-filter: blur(4px);
+}
+@media (max-width: 600px) {
+  #toolbar { padding: 8px; gap: 4px; }
+  #toolbar button { padding: 10px 12px; min-width: 48px; }
+  #toolbar #status { display: none; }
+  #hud { font-size: 11px; padding: 8px 10px; }
+  #cursorCoord { font-size: 12px; }
+}
+#hud > div + div { margin-top: 4px; }
+#cursorCoord {
+  font-family: ui-monospace, monospace;
+  color: #80b3ff;
+  font-weight: 600;
+  font-size: 14px;
+}
+#hint { opacity: 0.6; font-style: italic; }
+
+.mark-dot {
+  fill: #ff3355;
+  stroke: #fff;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.seg-line {
+  fill: none;
+  stroke: #ffcc00;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.seg-line.preview {
+  stroke-dasharray: 6 4;
+  opacity: 0.85;
+}
+.bearing-bg {
+  fill: rgba(15, 22, 32, 0.92);
+  stroke: #ffcc00;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.bearing-label {
+  fill: #ffcc00;
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+}
+.mark-bg {
+  fill: rgba(15, 22, 32, 0.92);
+  stroke: #ff3355;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.mark-label {
+  fill: #fff;
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  dominant-baseline: alphabetic;
+}

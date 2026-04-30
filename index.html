@@ -8,10 +8,10 @@
 </head>
 <body>
   <header id="toolbar">
-    <button id="inspectBtn" title="Tap shows coords without dropping a mark">Inspect</button>
-    <button id="undoBtn"    title="Remove last mark (Ctrl+Z)">Undo</button>
-    <button id="clearBtn"   title="Remove all marks">Clear</button>
-    <button id="fitBtn"     title="Fit chart to screen">Fit</button>
+    <button id="markBtn"  title="Drop a mark at the crosshair (M)">Mark</button>
+    <button id="undoBtn"  title="Remove last mark (Ctrl+Z)">Undo</button>
+    <button id="clearBtn" title="Remove all marks">Clear</button>
+    <button id="fitBtn"   title="Fit chart to screen">Fit</button>
     <span class="spacer"></span>
     <span id="status">Loading map.pdf…</span>
   </header>
@@ -21,9 +21,14 @@
       <img id="chartImg" src="map.png" alt="" draggable="false">
       <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
+    <svg id="reticle" xmlns="http://www.w3.org/2000/svg" viewBox="-20 -20 40 40" aria-hidden="true">
+      <circle cx="0" cy="0" r="14" fill="none" stroke="#000" stroke-width="2.5"/>
+      <path d="M-19 0 H -6 M 6 0 H 19 M 0 -19 V -6 M 0 6 V 19" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="0" cy="0" r="2" fill="#000"/>
+    </svg>
     <div id="hud">
       <div id="cursorCoord">—</div>
-      <div id="hint">Click to drop a coordinate mark. Drag to pan, scroll to zoom.</div>
+      <div id="hint">Drag to pan, pinch/scroll to zoom. Tap to recenter, Mark to record.</div>
     </div>
   </main>
 

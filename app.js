@@ -4,7 +4,7 @@ const viewport     = document.getElementById('viewport');
 const world        = document.getElementById('world');
 const chartImg     = document.getElementById('chartImg');
 const overlay      = document.getElementById('overlay');
-const inspectBtn   = document.getElementById('inspectBtn');
+const markBtn      = document.getElementById('markBtn');
 const undoBtn      = document.getElementById('undoBtn');
 const clearBtn     = document.getElementById('clearBtn');
 const fitBtn       = document.getElementById('fitBtn');
@@ -36,10 +36,8 @@ const state = {
   worldW: 0, worldH: 0,
   zoom: 1, tx: 0, ty: 0,
   marks: [],
-  cursor: null,
   pan: null,
   pressStart: null,
-  inspect: false,
 };
 
 // --- image loading -----------------------------------------------------
@@ -171,16 +169,39 @@ function pinchSnapshot() {
   };
 }
 
-function updateCursorFrom(clientX, clientY) {
-  const w = clientToWorld(clientX, clientY);
-  if (w.x >= 0 && w.x <= state.worldW && w.y >= 0 && w.y <= state.worldH) {
-    state.cursor = w;
+function viewportCenter() {
+  const r = viewport.getBoundingClientRect();
+  return { x: r.width / 2, y: r.height / 2 };
+}
+
+function reticleWorld() {
+  const c = viewportCenter();
+  return {
+    x: (c.x - state.tx) / state.zoom,
+    y: (c.y - state.ty) / state.zoom,
+  };
+}
+
+function inBounds(p) {
+  return p.x >= 0 && p.x <= state.worldW && p.y >= 0 && p.y <= state.worldH;
+}
+
+function updateHud() {
+  const w = reticleWorld();
+  if (state.ready && inBounds(w)) {
     const { lat, lon } = pixelToLatLon(w.x, w.y);
     cursorCoord.textContent = formatLatLon(lat, lon);
   } else {
-    state.cursor = null;
     cursorCoord.textContent = '—';
   }
+}
+
+function recenterAt(clientX, clientY) {
+  const w = clientToWorld(clientX, clientY);
+  const c = viewportCenter();
+  state.tx = c.x - w.x * state.zoom;
+  state.ty = c.y - w.y * state.zoom;
+  applyTransform();
 }
 
 viewport.addEventListener('wheel', (e) => {
@@ -203,21 +224,11 @@ viewport.addEventListener('pointerdown', (e) => {
     pinchPrev = pinchSnapshot();
     didPinch = true;
   }
-  // Show coords for the press point immediately, even on touch (no hover).
-  updateCursorFrom(e.clientX, e.clientY);
-  if (state.marks.length % 2 === 1) redraw();
   e.preventDefault();
 });
 
 viewport.addEventListener('pointermove', (e) => {
-  // Mouse hover (no button held) — track cursor for the live preview.
-  if (!pointers.has(e.pointerId)) {
-    if (e.pointerType === 'mouse' && state.ready) {
-      updateCursorFrom(e.clientX, e.clientY);
-      if (state.marks.length % 2 === 1) redraw();
-    }
-    return;
-  }
+  if (!pointers.has(e.pointerId)) return;
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
   if (pointers.size === 1 && state.pan) {
@@ -226,7 +237,6 @@ viewport.addEventListener('pointermove', (e) => {
     if (Math.hypot(dx, dy) > 4) viewport.classList.add('panning');
     state.tx = state.pan.tx + dx;
     state.ty = state.pan.ty + dy;
-    if (state.ready) updateCursorFrom(e.clientX, e.clientY);
     applyTransform();
   } else if (pointers.size >= 2 && pinchPrev) {
     const cur = pinchSnapshot();
@@ -237,9 +247,6 @@ viewport.addEventListener('pointermove', (e) => {
     state.zoom = nz;
     pinchPrev = cur;
     applyTransform();
-  } else if (state.ready) {
-    updateCursorFrom(e.clientX, e.clientY);
-    if (state.marks.length % 2 === 1) redraw();
   }
 });
 
@@ -255,13 +262,9 @@ function endPointer(e) {
     pinchPrev = null;
     viewport.classList.remove('panning');
     if (moved < 6 && !didPinch && state.ready) {
-      if (state.inspect) {
-        // Just show the coord for the tapped point; don't drop a mark.
-        updateCursorFrom(e.clientX, e.clientY);
-        if (state.marks.length % 2 === 1) redraw();
-      } else {
-        addMarkAtClient(e.clientX, e.clientY);
-      }
+      // Tap recenters the chart on the tapped point so it sits under the
+      // crosshair; the toolbar Mark button (or M key) commits it.
+      recenterAt(e.clientX, e.clientY);
     }
     state.pressStart = null;
     didPinch = false;
@@ -277,18 +280,15 @@ function endPointer(e) {
 viewport.addEventListener('pointerup',     endPointer);
 viewport.addEventListener('pointercancel', endPointer);
 
-function addMarkAtClient(clientX, clientY) {
-  const w = clientToWorld(clientX, clientY);
-  if (w.x < 0 || w.x > state.worldW || w.y < 0 || w.y > state.worldH) return;
+function dropMarkAtReticle() {
+  const w = reticleWorld();
+  if (!state.ready || !inBounds(w)) return;
   const { lat, lon } = pixelToLatLon(w.x, w.y);
   state.marks.push({ x: w.x, y: w.y, lat, lon });
   redraw();
 }
 
-inspectBtn.addEventListener('click', () => {
-  state.inspect = !state.inspect;
-  inspectBtn.classList.toggle('toggle-on', state.inspect);
-});
+markBtn.addEventListener('click', dropMarkAtReticle);
 undoBtn.addEventListener('click', () => { state.marks.pop(); redraw(); });
 clearBtn.addEventListener('click', () => {
   if (!state.marks.length) return;
@@ -302,10 +302,15 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     state.marks.pop();
     redraw();
+  } else if (e.key === 'm' || e.key === 'M' || e.key === ' ') {
+    e.preventDefault();
+    dropMarkAtReticle();
   }
 });
 
-window.addEventListener('resize', () => {});
+// Reticle world position depends on viewport size; refresh on resize so the
+// HUD readout and the live preview line track the current center.
+window.addEventListener('resize', () => { if (state.ready) applyTransform(); });
 
 // --- rendering --------------------------------------------------------
 function redraw() {
@@ -313,10 +318,14 @@ function redraw() {
   for (let i = 1; i < state.marks.length; i += 2) {
     drawSegment(state.marks[i - 1], state.marks[i], false);
   }
-  if (state.marks.length % 2 === 1 && state.cursor) {
-    drawSegment(state.marks[state.marks.length - 1], state.cursor, true);
+  if (state.marks.length % 2 === 1) {
+    const w = reticleWorld();
+    if (inBounds(w)) {
+      drawSegment(state.marks[state.marks.length - 1], w, true);
+    }
   }
   for (const m of state.marks) drawMark(m);
+  updateHud();
 }
 
 function drawSegment(a, b, preview) {
